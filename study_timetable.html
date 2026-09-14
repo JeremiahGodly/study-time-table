@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Study Timetable 📚</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Patrick+Hand&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Caveat', cursive;
+      background: #fdf6e3;
+      margin: 0;
+      padding: 0;
+    }
+
+    .notebook-page {
+      background: #fefcf0;
+      position: relative;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 32px 50px 50px 80px;
+      min-height: 100vh;
+      box-shadow: 4px 0 12px rgba(0,0,0,0.08);
+    }
+
+    .notebook-page::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 62px; bottom: 0;
+      width: 2px;
+      background: rgba(220,80,80,0.4);
+    }
+
+    .holes {
+      position: fixed;
+      left: 10px; top: 0; bottom: 0;
+      width: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 36px;
+      z-index: 10;
+    }
+    .hole {
+      width: 18px; height: 18px;
+      background: #d4c9a8;
+      border-radius: 50%;
+      border: 2px solid #b8aa88;
+      margin-bottom: 28px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+    }
+
+    .lined-bg {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent, transparent 33px,
+        rgba(150,190,230,0.25) 33px, rgba(150,190,230,0.25) 34px
+      );
+      background-position: 0 46px;
+      pointer-events: none;
+    }
+
+    .page-title {
+      font-family: 'Caveat', cursive;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #2c4a7c;
+      text-align: center;
+      margin-bottom: 2px;
+      position: relative; z-index: 1;
+    }
+    .page-subtitle {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 0.85rem;
+      color: #999;
+      text-align: center;
+      margin-bottom: 6px;
+      position: relative; z-index: 1;
+    }
+    .date-line {
+      font-family: 'Caveat', cursive;
+      font-size: 1rem;
+      color: #b05a5a;
+      text-align: right;
+      margin-bottom: 8px;
+      position: relative; z-index: 1;
+    }
+
+    .section-label {
+      font-family: 'Caveat', cursive;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 1px 8px;
+      border-radius: 4px;
+      margin: 8px 0 3px 0;
+      display: inline-block;
+      position: relative; z-index: 1;
+    }
+    .label-health { background:#ffe0e0; color:#c0392b; }
+    .label-study  { background:#e0f0ff; color:#1a5276; }
+    .label-break  { background:#e8f8e8; color:#1e8449; }
+    .label-meal   { background:#fff3d6; color:#b7770d; }
+    .label-sleep  { background:#ede0ff; color:#7d3c98; }
+
+    .entry-row {
+      display: flex;
+      align-items: center;
+      padding: 2px 0;
+      position: relative; z-index: 1;
+      min-height: 28px;
+    }
+
+    .time-badge {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 0.72rem;
+      color: #555;
+      min-width: 102px;
+      white-space: nowrap;
+    }
+
+    .custom-check {
+      width: 16px; height: 16px;
+      border: 2px solid #888;
+      border-radius: 3px;
+      margin-right: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      background: transparent;
+    }
+    .custom-check.checked { border-color:#2c7a2c; background:#d4f7d4; }
+    .custom-check.checked::after {
+      content:'✓'; font-size:11px; color:#2c7a2c;
+      font-weight:700; font-family:'Caveat',cursive;
+    }
+
+    .fixed-label {
+      font-family: 'Caveat', cursive;
+      font-size: 1rem;
+      font-weight: 600;
+      flex: 1;
+    }
+    .health-color { color:#c0392b; }
+    .meal-color   { color:#b7770d; }
+    .break-color  { color:#1e8449; }
+    .sleep-color  { color:#7d3c98; }
+
+    .write-line {
+      flex: 1;
+      border: none;
+      border-bottom: 1.5px dotted #aac4e0;
+      background: transparent;
+      font-family: 'Caveat', cursive;
+      font-size: 1rem;
+      color: #2c4a7c;
+      outline: none;
+      padding: 0 4px;
+      min-width: 80px;
+    }
+    .write-line::placeholder { color:#c5d8ec; font-style:italic; font-size:0.9rem; }
+    .write-line.done { text-decoration:line-through; color:#aaa; }
+
+    .subject-tag {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-left: 5px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .tag-math  { background:#dce8ff; color:#1a3c8a; }
+    .tag-sci   { background:#d8f5e8; color:#1a5c35; }
+    .tag-eng   { background:#fff0d4; color:#8a4a00; }
+    .tag-hist  { background:#f5e0ff; color:#5a1a8a; }
+    .tag-geo   { background:#ffe4d4; color:#8a3200; }
+    .tag-lang  { background:#d4f0ff; color:#004a7a; }
+    .tag-comp  { background:#e4ffe4; color:#1a5a1a; }
+    .tag-other { background:#f0f0f0; color:#444; }
+
+    hr.divider {
+      border: none;
+      border-top: 1px dashed #d0c8b0;
+      margin: 5px 0;
+      position: relative; z-index: 1;
+    }
+
+    /* Two-column layout for study blocks */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 16px;
+      position: relative; z-index: 1;
+    }
+
+    .sticky-note {
+      background: #fffbcc;
+      border-left: 3px solid #f0c040;
+      border-radius: 2px 6px 6px 2px;
+      padding: 6px 12px;
+      margin: 10px 0 6px 0;
+      font-family: 'Caveat', cursive;
+      font-size: 0.9rem;
+      color: #5a4a00;
+      position: relative; z-index: 1;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .progress-bar-wrap {
+      background: #e8e0cc;
+      border-radius: 8px;
+      height: 10px;
+      overflow: hidden;
+      margin-top: 4px;
+      position: relative; z-index: 1;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg,#5dade2,#1a8c5c);
+      border-radius: 8px;
+      transition: width 0.4s;
+    }
+    .progress-label {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 0.82rem;
+      color: #666;
+      position: relative; z-index: 1;
+    }
+
+    /* ── Live time clock badge (fixed top-right) ── */
+    .live-clock {
+      position: fixed;
+      top: 16px;
+      right: 20px;
+      background: #2c4a7c;
+      color: white;
+      font-family: 'Caveat', cursive;
+      font-size: 1.3rem;
+      font-weight: 700;
+      padding: 6px 16px 6px 12px;
+      border-radius: 30px;
+      box-shadow: 0 3px 12px rgba(44,74,124,0.35);
+      z-index: 100;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .live-clock .dot {
+      width: 8px; height: 8px;
+      background: #5dde8a;
+      border-radius: 50%;
+      animation: pulse 1.4s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* ── Active row highlight ── */
+    .entry-row.now-active {
+      background: linear-gradient(90deg, rgba(93,173,226,0.18), transparent 80%);
+      border-radius: 6px;
+      border-left: 3px solid #2c7aaa;
+      padding-left: 4px;
+      position: relative;
+    }
+
+    /* ── "NOW ▶" arrow marker beside the row ── */
+    .entry-row.now-active::before {
+      content: '▶ NOW';
+      position: absolute;
+      left: -52px;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #2c7aaa;
+      background: #e0f0ff;
+      border-radius: 4px;
+      padding: 1px 4px;
+      white-space: nowrap;
+      z-index: 5;
+    }
+
+    /* ── Time-of-day progress bar (horizontal line across page) ── */
+    .day-progress-bar {
+      position: relative;
+      z-index: 1;
+      height: 6px;
+      background: #e8e0cc;
+      border-radius: 4px;
+      margin: 6px 0 10px 0;
+      overflow: visible;
+    }
+    .day-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #5dade2, #1a8c5c);
+      border-radius: 4px;
+      transition: width 60s linear;
+      position: relative;
+    }
+    .day-progress-fill::after {
+      content: '🕐';
+      position: absolute;
+      right: -10px;
+      top: -8px;
+      font-size: 1rem;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+    }
+    .day-progress-label {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 0.78rem;
+      color: #777;
+      margin-bottom: 1px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn-row { display:flex; gap:10px; margin-top:14px; position:relative; z-index:1; }
+    .reset-btn {
+      font-family:'Caveat',cursive; font-size:0.95rem;
+      background:#f8e8e8; color:#b05a5a;
+      border:2px dashed #d09090; border-radius:8px;
+      padding:3px 14px; cursor:pointer;
+    }
+    .reset-btn:hover { background:#f0d0d0; }
+    .print-btn {
+      font-family:'Caveat',cursive; font-size:0.95rem;
+      background:#e8f0ff; color:#2c4a7c;
+      border:2px dashed #90a8d0; border-radius:8px;
+      padding:3px 14px; cursor:pointer;
+    }
+    .print-btn:hover { background:#d0dcf4; }
+
+    /* ===================== PRINT STYLES ===================== */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 5mm 8mm 5mm 8mm;
+      }
+
+      html, body {
+        width: 210mm;
+        height: 297mm;
+        margin: 0; padding: 0;
+        background: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .holes, .btn-row, .no-print { display: none !important; }
+
+      .notebook-page {
+        max-width: 100%;
+        width: 100%;
+        padding: 4mm 6mm 4mm 10mm;
+        box-shadow: none;
+        min-height: unset;
+        background: white !important;
+      }
+
+      .notebook-page::before {
+        left: 7mm;
+      }
+
+      .lined-bg {
+        background-image: repeating-linear-gradient(
+          to bottom,
+          transparent, transparent 23px,
+          rgba(150,190,230,0.2) 23px, rgba(150,190,230,0.2) 24px
+        );
+        background-position: 0 30px;
+      }
+
+      .page-title { font-size: 1.6rem; margin-bottom: 1px; }
+      .page-subtitle { font-size: 0.72rem; margin-bottom: 3px; }
+      .date-line { font-size: 0.75rem; margin-bottom: 4px; }
+
+      .progress-label { font-size: 0.7rem; }
+      .progress-bar-wrap { height: 7px; margin-top: 3px; }
+
+      hr.divider { margin: 4px 0; }
+
+      .section-label {
+        font-size: 0.68rem;
+        padding: 1px 6px;
+        margin: 6px 0 2px 0;
+        letter-spacing: 1px;
+      }
+
+      .entry-row {
+        min-height: 22px;
+        padding: 1px 0;
+      }
+
+      .time-badge {
+        font-size: 0.65rem;
+        min-width: 82px;
+      }
+
+      .custom-check {
+        width: 12px; height: 12px;
+        border-width: 1.5px;
+        margin-right: 5px;
+      }
+      .custom-check.checked::after { font-size: 9px; }
+
+      .fixed-label { font-size: 0.88rem; }
+
+      .write-line {
+        font-size: 0.88rem;
+        border-bottom-width: 1px;
+      }
+      .write-line::placeholder { font-size: 0.78rem; }
+
+      .subject-tag {
+        font-size: 0.58rem;
+        padding: 0 5px;
+        margin-left: 4px;
+      }
+
+      .two-col { gap: 0 10px; }
+
+      .sticky-note {
+        font-size: 0.62rem;
+        padding: 3px 8px;
+        margin: 4px 0 3px 0;
+        border-left-width: 2px;
+      }
+
+      /* ── Laser-printer friendly: strip ALL colour fills ── */
+      html, body,
+      .notebook-page {
+        background: white !important;
+      }
+
+      /* Page background & ruled lines → plain white + faint gray lines */
+      .lined-bg {
+        background-image: repeating-linear-gradient(
+          to bottom,
+          transparent, transparent 23px,
+          #e0e0e0 23px, #e0e0e0 24px
+        ) !important;
+      }
+
+      /* Red margin line → light gray */
+      .notebook-page::before {
+        background: #cccccc !important;
+      }
+
+      /* Section label pills → white + thin border */
+      .label-health,
+      .label-study,
+      .label-break,
+      .label-meal,
+      .label-sleep {
+        background: white !important;
+        border: 1px solid #999 !important;
+      }
+
+      /* Subject time tags → white + thin border */
+      .tag-math, .tag-sci, .tag-eng,
+      .tag-hist, .tag-geo, .tag-lang,
+      .tag-comp, .tag-other {
+        background: white !important;
+        border: 1px solid #bbb !important;
+        color: #333 !important;
+      }
+
+      /* Sticky note → plain white box */
+      .sticky-note {
+        background: white !important;
+        border-left: 2px solid #888 !important;
+        box-shadow: none !important;
+      }
+
+      /* Checkbox → white, ink border */
+      .custom-check {
+        border-color: #444 !important;
+        background: white !important;
+      }
+      .custom-check.checked {
+        background: white !important;
+      }
+      .custom-check.checked::after {
+        color: #222 !important;
+      }
+
+      /* Progress bar → white + border outline */
+      .progress-bar-wrap {
+        background: #eee !important;
+      }
+      .progress-bar-fill {
+        background: #555 !important;
+      }
+
+      /* Keep text colours readable in grayscale */
+      .health-color { color: #333 !important; }
+      .meal-color   { color: #333 !important; }
+      .break-color  { color: #333 !important; }
+      .sleep-color  { color: #333 !important; }
+      .page-title   { color: #111 !important; }
+      .date-line    { color: #444 !important; }
+
+      /* Hide live indicators when printing */
+      .live-clock,
+      .day-progress-bar,
+      .day-progress-label,
+      .entry-row.now-active::before {
+        display: none !important;
+      }
+      .entry-row.now-active {
+        background: none !important;
+        border-left: none !important;
+        padding-left: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="holes" id="holes"></div>
+
+  <!-- Live clock badge -->
+  <div class="live-clock" id="liveClock">
+    <span class="dot"></span>
+    <span id="clockText">--:-- --</span>
+  </div>
+
+  <div class="notebook-page">
+    <div class="lined-bg"></div>
+
+    <!-- Header -->
+    <div class="page-title">📚 My Study Timetable</div>
+    <div class="page-subtitle">— daily schedule for focused &amp; healthy learning —</div>
+    <div class="date-line" id="dateDisplay"></div>
+
+    <div class="progress-label">Today's Progress: <span id="progressText">0 / 0</span> tasks done ✨</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+    </div>
+
+    <!-- Day-of-time progress -->
+    <div class="day-progress-label">
+      <span>🌅 5:00 am — wake up</span>
+      <span id="dayPctLabel">day progress</span>
+      <span>🌙 9:45 pm — sleep</span>
+    </div>
+    <div class="day-progress-bar">
+      <div class="day-progress-fill" id="dayProgressFill" style="width:0%"></div>
+    </div>
+
+    <hr class="divider" style="margin-top:8px;">
+
+    <!-- MORNING -->
+    <span class="section-label label-sleep">🌙 Wake Up &amp; Morning</span>
+    <div class="two-col">
+      <div class="entry-row">
+        <span class="time-badge">5:00 – 5:15 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label health-color">☀️ Wake up &amp; stretch</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">5:15 – 5:30 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label health-color">💧 Hydrate &amp; freshen up</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">5:30 – 6:15 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label health-color">🏃 Exercise / Yoga / Walk</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">6:15 – 6:45 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label meal-color">🥣 Breakfast (nutritious!)</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- BLOCK 1 -->
+    <span class="section-label label-study">📖 Morning Intense Study — Block 1</span>
+    <div class="two-col">
+      <div class="entry-row">
+        <span class="time-badge">6:45 – 7:15 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-math">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">7:15 – 7:45 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-sci">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">7:45 – 7:55 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label break-color">☕ Short break</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">7:55 – 8:25 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-eng">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">8:25 – 8:55 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-hist">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">8:55 – 9:05 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label break-color">🚶 Micro break</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">9:05 – 9:35 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-lang">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">9:35 – 10:05 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-math">30m</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- MIDDAY -->
+    <span class="section-label label-meal">🍱 Midday Break</span>
+    <div class="two-col">
+      <div class="entry-row">
+        <span class="time-badge">10:05 – 10:20 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label break-color">🌿 Relax / Deep breathing</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">10:20 – 11:00 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label meal-color">🍛 Lunch (balanced &amp; light)</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">11:00 – 11:20 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label break-color">😴 Power nap / quiet rest</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- BLOCK 2 -->
+    <span class="section-label label-study">📐 Afternoon Intense Study — Block 2</span>
+    <div class="two-col">
+      <div class="entry-row">
+        <span class="time-badge">11:20 – 11:50 am</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-comp">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">11:50 am – 12:20</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-geo">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">12:20 – 12:30 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label break-color">💧 Water break + stretch</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">12:30 – 1:00 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-sci">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">1:00 – 1:30 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-eng">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">1:30 – 1:40 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label break-color">🎵 Short fun break</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">1:40 – 2:10 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-hist">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">2:10 – 2:40 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-lang">30m</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SNACK -->
+    <span class="section-label label-meal">🍎 Snack + Recharge</span>
+    <div class="entry-row">
+      <span class="time-badge">2:40 – 3:10 pm</span>
+      <div class="custom-check" onclick="toggleCheck(this)"></div>
+      <span class="fixed-label meal-color">🍎 Healthy snack + short walk</span>
+    </div>
+
+    <hr class="divider">
+
+    <!-- BLOCK 3 -->
+    <span class="section-label label-study">🌆 Evening Intense Study — Block 3</span>
+    <div class="two-col">
+      <div class="entry-row">
+        <span class="time-badge">3:10 – 3:40 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-math">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">3:40 – 4:10 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-comp">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">4:10 – 4:20 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label break-color">☕ Tea / Water break</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">4:20 – 4:50 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-sci">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">4:50 – 5:20 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-geo">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">5:20 – 5:30 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label break-color">🚶 Stretch &amp; walk</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">5:30 – 6:00 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="subject / topic..." />
+        <span class="subject-tag tag-other">30m</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- EVENING HEALTH -->
+    <span class="section-label label-health">🏋️ Evening Health</span>
+    <div class="two-col">
+      <div class="entry-row">
+        <span class="time-badge">6:00 – 6:40 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label health-color">🏋️ Exercise / Sports / Cycling</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">6:40 – 7:10 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label meal-color">🍽️ Dinner (light &amp; healthy)</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- BLOCK 4 -->
+    <span class="section-label label-study">🌙 Night Revision — Block 4</span>
+    <div class="two-col">
+      <div class="entry-row">
+        <span class="time-badge">7:10 – 7:15 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label break-color">🧘 Calm down / breathe</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">7:15 – 7:45 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="Revise topic..." />
+        <span class="subject-tag tag-math">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">7:45 – 8:15 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="Revise topic..." />
+        <span class="subject-tag tag-sci">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">8:15 – 8:20 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label break-color">💧 Water break</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">8:20 – 8:50 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="Revise topic..." />
+        <span class="subject-tag tag-eng">30m</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">8:50 – 9:10 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <input class="write-line" placeholder="Quick notes / flashcards..." />
+        <span class="subject-tag tag-other">20m</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- WIND DOWN -->
+    <span class="section-label label-sleep">😴 Wind Down &amp; Sleep</span>
+    <div class="two-col">
+      <div class="entry-row">
+        <span class="time-badge">9:10 – 9:30 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label sleep-color">📖 Light reading / journaling</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">9:30 – 9:45 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label sleep-color">🌿 Relax routine</span>
+      </div>
+      <div class="entry-row">
+        <span class="time-badge">9:45 pm</span>
+        <div class="custom-check" onclick="toggleCheck(this)"></div>
+        <span class="fixed-label sleep-color">🌙 Lights off — 7.5 hrs sleep 💤</span>
+      </div>
+    </div>
+
+    <hr class="divider" style="margin-top:8px;">
+
+    <div class="sticky-note">
+      💡 drink 8 glasses of water · no screens 30 min before sleep · one subject per slot = deep focus!
+    </div>
+
+    <div class="btn-row no-print">
+      <button class="reset-btn" onclick="resetAll()">🔄 Reset All</button>
+      <button class="print-btn" onclick="window.print()">🖨️ Print (A4)</button>
+    </div>
+  </div>
+
+  <script>
+    // Spiral holes
+    const holesEl = document.getElementById('holes');
+    for (let i = 0; i < 30; i++) {
+      const h = document.createElement('div');
+      h.className = 'hole';
+      holesEl.appendChild(h);
+    }
+
+    // Date display
+    const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const today  = new Date();
+    document.getElementById('dateDisplay').textContent =
+      `📅 ${days[today.getDay()]}, ${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+
+    // ── Checkbox logic ──────────────────────────────────────
+    function toggleCheck(el) {
+      el.classList.toggle('checked');
+      const row = el.closest('.entry-row');
+      const wl  = row.querySelector('.write-line');
+      if (wl) wl.classList.toggle('done', el.classList.contains('checked'));
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const all  = document.querySelectorAll('.custom-check');
+      const done = document.querySelectorAll('.custom-check.checked');
+      const pct  = all.length > 0 ? Math.round((done.length / all.length) * 100) : 0;
+      document.getElementById('progressText').textContent = `${done.length} / ${all.length}`;
+      document.getElementById('progressBar').style.width = pct + '%';
+    }
+
+    function resetAll() {
+      document.querySelectorAll('.custom-check').forEach(el => el.classList.remove('checked'));
+      document.querySelectorAll('.write-line').forEach(el => { el.classList.remove('done'); el.value = ''; });
+      updateProgress();
+    }
+
+    updateProgress();
+
+    // ── Time helpers ────────────────────────────────────────
+    // Convert "6:45 am" or "11:50 am" → minutes since midnight
+    function parseTime(str) {
+      str = str.trim().toLowerCase();
+      const m = str.match(/(\d+):(\d+)\s*(am|pm)/);
+      if (!m) return null;
+      let h = parseInt(m[1]);
+      const min = parseInt(m[2]);
+      const ampm = m[3];
+      if (ampm === 'pm' && h !== 12) h += 12;
+      if (ampm === 'am' && h === 12) h = 0;
+      return h * 60 + min;
+    }
+
+    // Parse "6:45 – 7:15 am" → {start, end} in minutes
+    function parseBadge(badge) {
+      // e.g. "6:45 – 7:15 am" or "11:50 am – 12:20"
+      const raw = badge.textContent.trim();
+      // Split on –
+      const parts = raw.split('–').map(s => s.trim());
+      if (parts.length < 2) return null;
+
+      let startStr = parts[0]; // "6:45"
+      let endStr   = parts[1]; // "7:15 am" or "12:20"
+
+      // Determine am/pm from the end part first
+      const ampmMatch = endStr.match(/(am|pm)/i);
+      const suffix = ampmMatch ? ampmMatch[1].toLowerCase() : null;
+
+      // If startStr has no am/pm, give it the same suffix as end
+      if (!/am|pm/i.test(startStr) && suffix) {
+        // For pm slots: if start hour > end hour (i.e., wraps), might be pm already
+        // Safe approach: attach suffix; parseTime handles the math
+        startStr = startStr + ' ' + suffix;
+      }
+      if (!/am|pm/i.test(endStr) && suffix) {
+        endStr = endStr + ' ' + suffix;
+      }
+
+      // Special: for "5:30 – 6:15 am" start is obviously am too
+      const start = parseTime(startStr);
+      const end   = parseTime(endStr);
+      return (start !== null && end !== null) ? { start, end } : null;
+    }
+
+    // Current time in minutes since midnight
+    function nowMinutes() {
+      const n = new Date();
+      return n.getHours() * 60 + n.getMinutes();
+    }
+
+    // ── Live clock + highlight ──────────────────────────────
+    function updateClock() {
+      const n    = new Date();
+      const hh   = n.getHours();
+      const mm   = String(n.getMinutes()).padStart(2,'0');
+      const ss   = String(n.getSeconds()).padStart(2,'0');
+      const ampm = hh >= 12 ? 'PM' : 'AM';
+      const h12  = hh % 12 || 12;
+      document.getElementById('clockText').textContent =
+        `${h12}:${mm}:${ss} ${ampm}`;
+    }
+
+    function updateDayProgress() {
+      // Day window: 5:00 am (300 min) → 9:45 pm (1305 min)
+      const DAY_START = 5 * 60;      // 300
+      const DAY_END   = 21 * 60 + 45; // 1305
+      const now = nowMinutes();
+      let pct = 0;
+      if (now <= DAY_START) pct = 0;
+      else if (now >= DAY_END) pct = 100;
+      else pct = Math.round(((now - DAY_START) / (DAY_END - DAY_START)) * 100);
+      document.getElementById('dayProgressFill').style.width = pct + '%';
+      document.getElementById('dayPctLabel').textContent = `${pct}% of day done`;
+    }
+
+    let lastActiveRow = null;
+    function highlightCurrentRow() {
+      const now = nowMinutes();
+      const rows = document.querySelectorAll('.entry-row');
+      let found = null;
+
+      rows.forEach(row => {
+        row.classList.remove('now-active');
+        const badge = row.querySelector('.time-badge');
+        if (!badge) return;
+        const range = parseBadge(badge);
+        if (!range) return;
+        if (now >= range.start && now < range.end) {
+          found = row;
+        }
+      });
+
+      if (found) {
+        found.classList.add('now-active');
+        // Scroll to active row if it changed
+        if (found !== lastActiveRow) {
+          found.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          lastActiveRow = found;
+        }
+      }
+    }
+
+    // ── Tick every second ──────────────────────────────────
+    function tick() {
+      updateClock();
+      updateDayProgress();
+      highlightCurrentRow();
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
