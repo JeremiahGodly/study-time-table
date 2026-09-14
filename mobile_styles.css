@@ -1,0 +1,63 @@
+    /* ===================== MOBILE STYLES ===================== */
+    @media screen and (max-width: 768px) {
+      .notebook-page {
+        padding: 24px 16px 40px 48px;
+        box-shadow: none;
+      }
+      .notebook-page::before {
+        left: 36px;
+      }
+      .holes {
+        left: 4px;
+      }
+      .hole {
+        width: 14px;
+        height: 14px;
+        margin-bottom: 22px;
+      }
+      .two-col {
+        grid-template-columns: 1fr;
+        gap: 8px 0;
+      }
+      .live-clock {
+        position: relative;
+        top: 0;
+        right: 0;
+        display: inline-flex;
+        margin-bottom: 12px;
+        font-size: 1rem;
+        padding: 4px 12px;
+        border-radius: 20px;
+        box-shadow: 0 2px 8px rgba(44,74,124,0.2);
+      }
+      .page-title {
+        font-size: 1.8rem;
+        text-align: left;
+      }
+      .page-subtitle {
+        text-align: left;
+        font-size: 0.8rem;
+      }
+      .date-line {
+        text-align: left;
+        margin-bottom: 16px;
+      }
+      .entry-row.now-active::before {
+        left: -40px;
+        font-size: 0.55rem;
+        padding: 1px 3px;
+        letter-spacing: -0.5px;
+      }
+      .day-progress-label {
+        font-size: 0.7rem;
+      }
+      .btn-row {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .reset-btn, .print-btn {
+        width: 100%;
+        padding: 8px;
+        font-size: 1.1rem;
+      }
+    }
