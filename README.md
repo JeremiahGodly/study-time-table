@@ -9,7 +9,7 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-> Open `study_timetable.html` directly in your browser — no install, no build, no dependencies.
+> Open `index.html` directly in your browser — no install, no build, no dependencies.
 
 </div>
 
@@ -68,16 +68,16 @@
 git clone https://github.com/<your-username>/study-timetable.git
 
 # Open in browser
-open "study time table/study_timetable.html"
+open "study time table/index.html"
 ```
 
-Or just **download the ZIP** and double-click `study_timetable.html`.
+Or just **download the ZIP** and double-click `index.html`.
 
 ---
 
 ## 🖨️ Printing to A4
 
-1. Open `study_timetable.html` in your browser
+1. Open `index.html` in your browser
 2. Click the **🖨️ Print (A4)** button at the bottom
 3. In the print dialog:
    - Paper size → **A4**
@@ -90,7 +90,7 @@ Or just **download the ZIP** and double-click `study_timetable.html`.
 
 ```
 study time table/
-├── study_timetable.html   # The entire app — self-contained, single file
+├── index.html   # The entire app — self-contained, single file
 └── README.md              # This file
 ```
 
