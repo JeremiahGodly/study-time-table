@@ -655,6 +655,110 @@
         font-size: 1.1rem;
       }
     }
+
+    /* ── Alarm toast ───────────────────────────────────────── */
+    .alarm-toast {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-120px);
+      background: #2c4a7c;
+      color: white;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      padding: 14px 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(44,74,124,0.4);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 280px;
+      max-width: 92vw;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .alarm-toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+    .alarm-toast .toast-bell {
+      font-size: 1.8rem;
+      animation: bell-shake 0.5s ease infinite alternate;
+    }
+    @keyframes bell-shake {
+      0%   { transform: rotate(-18deg); }
+      100% { transform: rotate(18deg); }
+    }
+    .alarm-toast .toast-text { flex: 1; line-height: 1.3; }
+    .alarm-toast .toast-title { font-weight: 700; font-size: 1.1rem; }
+    .alarm-toast .toast-sub   { font-size: 0.85rem; opacity: 0.85; font-family: 'Patrick Hand', cursive; }
+    .snooze-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1.5px solid rgba(255,255,255,0.5);
+      color: white;
+      font-family: 'Caveat', cursive;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      padding: 4px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .snooze-btn:hover { background: rgba(255,255,255,0.35); }
+    .dismiss-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.7);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .dismiss-btn:hover { color: white; }
+
+    /* ── Next-up strip ─────────────────────────────────────── */
+    .next-up-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0f6ff;
+      border: 1.5px dashed #90b8e0;
+      border-radius: 10px;
+      padding: 6px 12px;
+      margin: 8px 0 4px 0;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 0.82rem;
+      color: #2c4a7c;
+      position: relative;
+      z-index: 1;
+    }
+    .next-up-strip .next-label { font-weight: 700; white-space: nowrap; }
+    .next-up-strip .next-info  { flex: 1; }
+    .next-up-strip .next-countdown { font-weight: 700; color: #c0392b; white-space: nowrap; }
+
+    /* ── Alarm toggle button ───────────────────────────────── */
+    .alarm-btn {
+      font-family: 'Caveat', cursive;
+      font-size: 0.95rem;
+      background: #e8fff0;
+      color: #1e6b3c;
+      border: 2px dashed #70b890;
+      border-radius: 8px;
+      padding: 3px 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .alarm-btn:hover  { background: #d0f0e0; }
+    .alarm-btn.muted  { background: #f8f0f0; color: #a05050; border-color: #d09090; }
+    .alarm-btn.muted:hover { background: #f0e0e0; }
+
+    @media screen and (max-width: 768px) {
+      .alarm-btn { width: 100%; padding: 8px; font-size: 1.1rem; }
+      .alarm-toast { font-size: 1rem; padding: 12px 16px; top: 60px; }
+      .next-up-strip { font-size: 0.75rem; }
+    }
+    @media print {
+      .alarm-toast, .next-up-strip, .alarm-btn { display: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -987,10 +1091,29 @@
       💡 drink 8 glasses of water · no screens 30 min before sleep · one subject per slot = deep focus!
     </div>
 
+    <!-- Next-up strip -->
+    <div class="next-up-strip" id="nextUpStrip">
+      <span class="next-label">⏰ Next up:</span>
+      <span class="next-info" id="nextUpInfo">—</span>
+      <span class="next-countdown" id="nextUpCountdown"></span>
+    </div>
+
     <div class="btn-row no-print">
       <button class="reset-btn" onclick="resetAll()">🔄 Reset All</button>
+      <button class="alarm-btn" id="alarmBtn" onclick="toggleAlarm()">🔔 Alarm On</button>
       <button class="print-btn" onclick="window.print()">🖨️ Print (A4)</button>
     </div>
+  </div>
+
+  <!-- Alarm toast notification -->
+  <div class="alarm-toast" id="alarmToast">
+    <span class="toast-bell">🔔</span>
+    <div class="toast-text">
+      <div class="toast-title" id="toastTitle">Time's up!</div>
+      <div class="toast-sub"  id="toastSub">Next slot starting</div>
+    </div>
+    <button class="snooze-btn" onclick="snoozeAlarm()">💤 +5 min</button>
+    <button class="dismiss-btn" onclick="dismissAlarm()">✕</button>
   </div>
 
   <script>
@@ -1137,15 +1260,164 @@
       }
     }
 
+    // ── Alarm system ────────────────────────────────────────
+    let alarmEnabled   = true;
+    let snoozedUntil   = null;   // minutes, if snoozed
+    let lastAlarmSlot  = null;   // badge text of last alarmed slot
+
+    // Web Audio API — generates a pleasant bell tone, no files needed
+    function playBell() {
+      try {
+        const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+        const play = (freq, startT, dur) => {
+          const osc  = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startT);
+          gain.gain.setValueAtTime(0.6, startT);
+          gain.gain.exponentialRampToValueAtTime(0.001, startT + dur);
+          osc.start(startT);
+          osc.stop(startT + dur);
+        };
+        const t = ctx.currentTime;
+        play(880,  t,        1.2);
+        play(1108, t + 0.15, 1.0);
+        play(880,  t + 0.35, 0.9);
+        play(1320, t + 0.5,  1.4);
+      } catch (e) { /* audio blocked */ }
+    }
+
+    // Browser notification (ask permission once)
+    function requestNotifPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+    function sendNotif(title, body) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '' });
+      }
+    }
+
+    // Toggle alarm on/off
+    function toggleAlarm() {
+      alarmEnabled = !alarmEnabled;
+      const btn = document.getElementById('alarmBtn');
+      if (alarmEnabled) {
+        btn.textContent = '🔔 Alarm On';
+        btn.classList.remove('muted');
+        requestNotifPermission();
+      } else {
+        btn.textContent = '🔕 Alarm Off';
+        btn.classList.add('muted');
+        dismissAlarm();
+      }
+    }
+
+    // Show toast
+    function showToast(title, sub) {
+      document.getElementById('toastTitle').textContent = title;
+      document.getElementById('toastSub').textContent   = sub;
+      document.getElementById('alarmToast').classList.add('show');
+      playBell();
+      sendNotif('⏰ ' + title, sub);
+      // Auto-dismiss after 20 s
+      setTimeout(dismissAlarm, 20000);
+    }
+
+    function dismissAlarm() {
+      document.getElementById('alarmToast').classList.remove('show');
+    }
+
+    function snoozeAlarm() {
+      dismissAlarm();
+      snoozedUntil = nowMinutes() + 5;
+    }
+
+    // ── Next-up strip logic ─────────────────────────────────
+    function getRowLabel(row) {
+      const wl    = row.querySelector('.write-line');
+      const fixed = row.querySelector('.fixed-label');
+      if (wl && wl.value.trim()) return wl.value.trim();
+      if (wl) return wl.placeholder.replace('write subject / topic here...', 'Study slot').replace('Revise topic...', 'Revision').replace('Quick notes / flashcards...', 'Notes');
+      if (fixed) return fixed.textContent.trim().replace(/^[^\w]+/, '').trim();
+      return 'Next slot';
+    }
+
+    function updateNextUp() {
+      const now  = nowMinutes();
+      const rows = document.querySelectorAll('.entry-row');
+      let nextRow   = null;
+      let nextStart = Infinity;
+
+      rows.forEach(row => {
+        const badge = row.querySelector('.time-badge');
+        if (!badge) return;
+        const range = parseBadge(badge);
+        if (!range) return;
+        if (range.start > now && range.start < nextStart) {
+          nextStart = range.start;
+          nextRow   = row;
+        }
+      });
+
+      const infoEl      = document.getElementById('nextUpInfo');
+      const countdownEl = document.getElementById('nextUpCountdown');
+
+      if (nextRow) {
+        const badge    = nextRow.querySelector('.time-badge');
+        const label    = getRowLabel(nextRow);
+        const minsLeft = nextStart - now;
+        const h        = Math.floor(minsLeft / 60);
+        const m        = minsLeft % 60;
+        const timeStr  = badge ? badge.textContent.trim() : '';
+        infoEl.textContent      = `${label}  (${timeStr})`;
+        countdownEl.textContent = h > 0 ? `in ${h}h ${m}m` : `in ${m} min`;
+      } else {
+        infoEl.textContent      = 'All done for today! 🎉';
+        countdownEl.textContent = '';
+      }
+    }
+
+    // ── Alarm fire check ────────────────────────────────────
+    function checkAlarm() {
+      if (!alarmEnabled) return;
+      const now  = nowMinutes();
+      if (snoozedUntil && now < snoozedUntil) return;
+      if (snoozedUntil && now >= snoozedUntil) snoozedUntil = null;
+
+      const rows = document.querySelectorAll('.entry-row');
+      rows.forEach(row => {
+        const badge = row.querySelector('.time-badge');
+        if (!badge) return;
+        const range = parseBadge(badge);
+        if (!range) return;
+        const badgeKey = badge.textContent.trim();
+        // Fire when current minute exactly matches slot start
+        if (now === range.start && lastAlarmSlot !== badgeKey) {
+          lastAlarmSlot = badgeKey;
+          const label = getRowLabel(row);
+          showToast(`⏰ Time to start!`, label + ' — ' + badgeKey);
+        }
+      });
+    }
+
     // ── Tick every second ──────────────────────────────────
     function tick() {
       updateClock();
       updateDayProgress();
       highlightCurrentRow();
+      checkAlarm();
+      updateNextUp();
     }
 
     tick();
     setInterval(tick, 1000);
+
+    // Ask for notification permission on load
+    requestNotifPermission();
   </script>
 </body>
 </html>
