@@ -47,7 +47,7 @@
 | 5:00 AM | ☀️ Wake up & stretch |
 | 5:30 AM | 🏃 Exercise / Yoga / Walk |
 | 6:15 AM | 🥣 Breakfast |
-| 10:20 AM | 🍛 Lunch + 😴 Power nap |
+| 1:00 PM | 🍛 Lunch + 😴 Power nap |
 | 2:40 PM | 🍎 Healthy snack |
 | 6:00 PM | 🏋️ Evening exercise |
 | 7:10 PM | 🍽️ Dinner |
